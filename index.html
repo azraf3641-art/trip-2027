@@ -158,14 +158,14 @@
 </style>
 <script>
 /* Set the theme BEFORE first paint to avoid a flash of the wrong colors.
-   localStorage + the OS preference are local-only browser APIs — no network,
-   no third party. */
+   Dark is the default; a saved choice (localStorage — a local-only browser API,
+   no network, no third party) overrides it. */
 (function(){
   try{
     var t=localStorage.getItem('trip2027_theme');
-    if(t!=='dark'&&t!=='light'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'; }
+    if(t!=='dark'&&t!=='light'){ t='dark'; } // dark by default unless the visitor chose light
     document.documentElement.setAttribute('data-theme',t);
-  }catch(e){ document.documentElement.setAttribute('data-theme','light'); }
+  }catch(e){ document.documentElement.setAttribute('data-theme','dark'); }
 })();
 </script>
 </head>
@@ -176,7 +176,7 @@
       <p class="eyebrow">Biennial trip · summer 2027 · pick our spot</p>
       <h1>The 2027 Shortlist</h1>
     </div>
-    <button id="themeToggle" class="themebtn" type="button" aria-label="Toggle dark mode" aria-pressed="false">🌙 Dark</button>
+    <button id="themeToggle" class="themebtn" type="button" aria-label="Toggle dark mode" aria-pressed="true">☀️ Swap to Light Mode</button>
   </header>
 
   <div class="setupnote" id="setupNote" hidden>
@@ -514,12 +514,12 @@ document.getElementById("fRoof").addEventListener("click",function(){fRoof=!fRoo
 document.getElementById("spotCount").textContent=V.length;
 renderLeads(); render(); wireForm();
 
-/* ---- Dark mode toggle (persists to localStorage; defaults to OS setting) ---- */
+/* ---- Dark mode toggle (dark by default; persists the choice to localStorage) ---- */
 const themeBtn=document.getElementById("themeToggle");
 function setTheme(t,persist){
   const dark = t==="dark";
   document.documentElement.setAttribute("data-theme", dark?"dark":"light");
-  themeBtn.textContent = dark ? "☀️ Light" : "🌙 Dark";
+  themeBtn.textContent = dark ? "☀️ Swap to Light Mode" : "🌙 Swap to Dark Mode";
   themeBtn.setAttribute("aria-pressed", dark?"true":"false");
   if(persist){ try{ localStorage.setItem("trip2027_theme", dark?"dark":"light"); }catch(e){} }
 }
