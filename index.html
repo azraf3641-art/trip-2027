@@ -106,6 +106,9 @@
   .body{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1;}
   .toplink{display:inline-block;font-weight:700;font-size:13.5px;color:var(--water);text-decoration:none;border-bottom:2px solid #cfe2df;margin:0 0 11px;align-self:flex-start;}
   .toplink:hover{color:var(--deep);border-color:var(--water);}
+  .cardtop{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 10px;margin:0 0 11px;}
+  .cardtop .toplink{margin:0;}
+  .cardtop .pick{white-space:nowrap;}
   .toprow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
   .num{font-family:'Spline Sans Mono',monospace;font-size:11px;color:var(--soft);}
   .badge{font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:99px;white-space:nowrap;}
@@ -464,15 +467,16 @@ function flagsHTML(o){return o.flags.map(f=>`<span class="flag ${f.ok?'ok':''}">
 
 function card(o){
   const isSel = selected.has(o.id);
-  const foot = FORM_CONFIGURED
-    ? `<button class="pick ${isSel?'on':''}" data-pick="${esc(o.id)}" aria-pressed="${isSel}">${isSel?'✓ Added':'Add to my picks'}</button>
-       <span class="meta">${isSel?'in your ballot':'tap to add'}</span>`
-    : `<button class="pick off" disabled aria-disabled="true" title="Voting isn't set up yet — see README.md">Add to my picks</button>
-       <span class="meta">preview</span>`;
+  const pickBtn = FORM_CONFIGURED
+    ? `<button class="pick ${isSel?'on':''}" data-pick="${esc(o.id)}" aria-pressed="${isSel}">${isSel?'✓ Added':'Add to my picks'}</button>`
+    : `<button class="pick off" disabled aria-disabled="true" title="Voting isn't set up yet — see README.md">Add to my picks</button>`;
   return `<article class="card ${isSel?'picked':''}" data-id="${esc(o.id)}">
     <div class="tile k-${esc(o.kind)}"><span>${esc(o.kindLabel)}</span></div>
     <div class="body">
-      <a class="toplink" href="${safeUrl(o.url)}" target="_blank" rel="noopener">Photos &amp; booking ↗</a>
+      <div class="cardtop">
+        <a class="toplink" href="${safeUrl(o.url)}" target="_blank" rel="noopener">Photos &amp; Information ↗</a>
+        ${pickBtn}
+      </div>
       <div class="toprow">
         <span class="num">${String(o.order).padStart(2,'0')} / ${V.length}</span>
         <span class="badge ${o.verified?'v':'q'}">${o.verified?'✓ Verified':'◇ By inquiry'}</span>
@@ -488,7 +492,6 @@ function card(o){
         <span class="amt ${o.amtq?'q':''}">${esc(o.amt)}</span>
         <div class="note">${esc(o.note)}</div>
       </div>
-      <div class="cardfoot">${foot}</div>
     </div>
   </article>`;
 }
