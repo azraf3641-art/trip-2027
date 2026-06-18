@@ -139,11 +139,12 @@
   .meta a{color:var(--water);text-decoration:none;border-bottom:1px solid #cfe2df;}
   .meta b{color:var(--deep);}
 
-  .results{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
-  .results h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
-  .results .sub{font-size:13px;color:var(--soft);margin:0 0 12px;}
-  .chartwrap{width:100%;border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--line);}
-  .chartwrap iframe{display:block;width:100%;height:420px;border:0;}
+  .volunteer{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--sun);border-radius:12px;padding:16px 18px;margin:0 0 18px;box-shadow:var(--shadow);}
+  .volunteer .vtext{flex:1;min-width:240px;}
+  .volunteer h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 4px;}
+  .volunteer p{font-size:13px;color:var(--soft);margin:0;}
+  .vtoggle{display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:600;cursor:pointer;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:9px 15px;white-space:nowrap;}
+  .vtoggle input{width:17px;height:17px;cursor:pointer;accent-color:var(--water);}
 
   .leads{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
   .leads h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
@@ -186,24 +187,19 @@
   </header>
 
   <div class="setupnote" id="setupNote" hidden>
-    <b>Voting isn't switched on yet.</b> The organizer needs to make a quick Google Form and paste its link into this page (~10 min — see <code>README.md</code>). The cards below are a live preview; the <b>Vote for this</b> buttons turn on once it's configured.
+    <b>Voting isn't switched on yet.</b> The organizer needs to make a quick Google Form and paste its link into this page (~15 min — see <code>README.md</code>). The cards below are a live preview; the <b>Vote for this</b> buttons turn on once it's configured.
   </div>
 
-  <section class="readme">
-    <h2>Read this first — how to use the numbers</h2>
-    <p><b>Costs assume 28 people, a summer week (7 nights), lodging only, per person.</b> Food is separate unless a place is marked <i>catered</i>. The number you should compare is per-person lodging.</p>
-    <p><b>Travel isn't the deciding factor.</b> Flights anywhere here run under ~$400 round-trip and most options are drive-able, so the things that actually separate these are <b>lodging cost, drive time, and the rules</b> (alcohol policy, season windows, whether the group is split across buildings).</p>
-    <p><b>Most of these don't publish a price</b> — group venues quote on inquiry. So every card is labelled honestly: a real number with the math where it's published, or "by inquiry" where it isn't. I'm not inventing ranges anymore.</p>
-    <div class="legend">
-      <span class="lg v">✓ Verified — published / confirmed on the venue's site</span>
-      <span class="lg q">◇ By inquiry — need to request a quote</span>
-      <span class="lg f">🚩 Flag — read the catch (fragmented, season, rules, cap)</span>
+  <section class="volunteer" id="volunteer" hidden>
+    <div class="vtext">
+      <h2>Want to help run the 2027 trip?</h2>
+      <p>Organizing for ~28 people takes a few hands. Flip this on before you vote and your ballot quietly notes you're up for it — totally optional, and only the organizer sees it.</p>
     </div>
+    <label class="vtoggle"><input type="checkbox" id="volunteerChk"> <span>Count me in to help organize</span></label>
   </section>
 
   <div class="votebar">
-    <p><b>How to vote:</b> tap <b>Vote for this</b> on any venue — a Google Form opens with that spot already selected. Sign in with Google and hit <b>Submit</b>. <b>One vote per person</b> — to change your pick, reopen the form and edit your response. Your vote is <b>anonymous</b> to everyone but the organizer. The running tally below is anonymous too.</p>
-    <a class="votebtn" id="voteCta">See live results →</a>
+    <p><b>How to vote:</b> tap <b>Vote for this</b> on any venue — a Google Form opens with that spot already selected. Sign in with Google and hit <b>Submit</b>. <b>One vote per person</b> — to change your pick, reopen the form and edit your response. Votes are private to the organizer; there's no public tally here.</p>
   </div>
 
   <div class="controls">
@@ -218,52 +214,38 @@
 
   <div class="grid" id="grid"></div>
 
-  <section class="results" id="results" hidden>
-    <h2>Live results</h2>
-    <p class="sub">Anonymous running tally — vote counts per venue only, no names or emails. Refreshes a few minutes after each vote.</p>
-    <div class="chartwrap"><iframe id="resultsChart" title="Live vote tally (anonymous)" loading="lazy" referrerpolicy="no-referrer"></iframe></div>
-  </section>
-
   <section class="leads" id="leads">
     <h2 id="leadsHeading">5 more candidates — promising, but I haven't verified them yet</h2>
     <p class="sub">From research leads (including the set you shared). I'm listing them honestly as unverified — say the word and I'll confirm capacity, price, fragmentation and a live booking link before they earn a card.</p>
     <div id="leadList"></div>
   </section>
 
-  <section class="foot" id="setup">
-    <h2>How this works — and how to set it up (organizer)</h2>
-    <p><b>Votes go to a Google Form; this page is just the ballot.</b> Every <b>Vote for this</b> button opens a Google Form with that venue pre-selected — tap Submit and you're counted. Everyone watches the running tally on the Form's own live results page via <b>See live results</b>. No accounts, no database, and nothing third-party runs in your friends' browsers beyond this page itself.</p>
-    <p><b>Why aren't live counts printed on each card?</b> Google lets anyone view the aggregate chart but blocks embedding it inside another page, so the honest, always-current tally is one tap away on <b>See live results</b> rather than baked into the cards. For ~30 friends that's the right trade for zero backend, zero secrets, zero install.</p>
-    <p><b>Set it up in ~10 minutes:</b> create the Form, turn on shareable results, grab the prefill link + entry id, paste <b>three values</b> into the top of this file's <code>&lt;script&gt;</code>, then deploy to GitHub Pages. Exact copy-paste steps (including how to add/edit a venue and how to reset votes) are in <code>README.md</code> next to this file.</p>
-    <p class="storestat" id="storestat">Checking setup…</p>
-  </section>
 </div>
 
 <script>
 /* =========================================================================
    HOW VOTING WORKS — and why there is NO backend
    -------------------------------------------------------------------------
-   This is a near-static page: vanilla HTML/CSS/JS, no build step, no server,
-   no database, no SDK. The only embedded third-party content is Google Fonts
-   and an OPTIONAL results-chart iframe (your OWN published Google chart, see
-   below). Safe to double-click locally (file://) and to host free on Pages.
+   This is a static page: vanilla HTML/CSS/JS, no build step, no server, no
+   database, no SDK, and no third-party JavaScript running in this page itself.
+   (Google Fonts loads via <link>.) Safe to double-click locally (file://) and to
+   host free on GitHub Pages.
 
    Votes are collected by a Google Form whose single multiple-choice question
    lists these venues. Tapping "Vote for this" opens the Form with the venue
    PRE-SELECTED; the voter signs in (Verified email) and submits. "Limit to 1
    response" gives one real vote per person, changeable by editing the response.
 
-   The tally voters see ("See live results") is ANONYMOUS: a chart PUBLISHED
-   from the linked Sheet over ONLY the venue column — vote counts, no names, no
-   emails — embedded below. Collected emails stay private to the organizer
-   (Responses tab / linked Sheet). The Form's own public results summary is
-   deliberately turned OFF so emails can never leak. See README "Privacy".
+   Results are PRIVATE to the organizer — there is intentionally NO public tally
+   on this page. Each vote (plus an optional "I'll help organize" volunteer flag)
+   lands only in the organizer's linked Google Sheet. Collected emails stay
+   private there, and the Form's public results summary is turned OFF, so nothing
+   about who voted or volunteered is ever exposed.
 
    Why a Google Form instead of Supabase / Firebase / a Worker? Zero backend to
-   run, zero secrets in the page; Google stores + aggregates + charts for free;
-   works from GitHub Pages and file://. Trade-offs: voters sign in with Google,
-   and the embedded chart refreshes on a delay of a few minutes (not instant).
-   Full setup is in README.md.
+   run, zero secrets in the page; Google stores + aggregates for free; works from
+   GitHub Pages and file://. Trade-off: voters sign in with Google. Full setup is
+   in README.md.
    ========================================================================= */
 
 /* ===== PASTE YOUR GOOGLE FORM INFO HERE — only these three values =====
@@ -280,35 +262,40 @@ const FORM_VIEWFORM_URL = "https://docs.google.com/forms/d/e/REPLACE_WITH_FORM_I
 //    Paste digits only — no "entry." prefix.
 const FORM_ENTRY_ID = "REPLACE_WITH_ENTRY_ID";
 
-// 3) LIVE TALLY (embedded + anonymous): a chart PUBLISHED from the linked
-//    responses Sheet, built over ONLY the venue column — so it shows vote
-//    counts and NEVER any emails. In the Sheet, build a small venue tally and
-//    chart it, then chart ⋮ menu > "Publish chart" > Embed > Interactive, and
-//    copy the iframe's src (a
-//    https://docs.google.com/spreadsheets/d/e/.../pubchart?oid=...&format=interactive
-//    URL). Paste that src here. We DON'T use the Form's own results summary —
-//    it's public and could expose collected emails (see README "Privacy").
-const FORM_CHART_EMBED_SRC = "REPLACE_WITH_CHART_EMBED_SRC";
+// 3) (OPTIONAL) VOLUNTEER capture. Add a 2nd question to the Form like
+//    "Want to help organize the trip?" with ONE checkbox option whose text is
+//    EXACTLY the VOLUNTEER_VALUE below, then paste that question's entry id here.
+//    When set, a "Count me in to help organize" toggle appears at the top of the
+//    page; flipping it on adds the volunteer flag to that person's single vote.
+//    Leave the placeholder to hide the volunteer section. (Organizer-only data —
+//    it lands in your private responses Sheet, never shown on the page.)
+const FORM_VOLUNTEER_ENTRY_ID = "REPLACE_WITH_VOLUNTEER_ENTRY_ID";
+const VOLUNTEER_VALUE = "Yes, I'll help organize"; // must match the Form option text EXACTLY
 /* ===================================================================== */
 
-// Voting turns on once the prefilled-link pieces (1 + 2) are real; the live
-// results chart (3) turns on independently once its embed src is pasted. Either
-// can stay a placeholder without breaking the page.
+// Voting turns on once the prefilled-link pieces (1 + 2) are real. The volunteer
+// toggle (3) turns on independently once its entry id is pasted. Either can stay
+// a placeholder without breaking the page. Results are organizer-only — there is
+// no public tally on this page by design.
 const FORM_CONFIGURED =
   !FORM_VIEWFORM_URL.includes("REPLACE_WITH") &&
   /^[0-9]+$/.test(FORM_ENTRY_ID);
-const CHART_CONFIGURED = !FORM_CHART_EMBED_SRC.includes("REPLACE_WITH");
+const VOLUNTEER_READY = /^[0-9]+$/.test(FORM_VOLUNTEER_ENTRY_ID);
 
 /* Build a one-tap prefilled vote link for a venue.
    The venue name MUST match the Form option text EXACTLY (spelling, case,
    spacing, punctuation) or Google silently ignores it and pre-selects nothing.
    encodeURIComponent is applied to the venue value ONLY (handles spaces, &,
    apostrophes, accents, etc.) — never to the base URL or the "entry." key. */
-function voteLink(name){
+function voteLink(name, volunteer){
   // strip any stray query the organizer may have left on the base URL, so we
   // never emit a double "?...?..." link
   const base = FORM_VIEWFORM_URL.split("?")[0];
-  return base + "?usp=pp_url&entry." + FORM_ENTRY_ID + "=" + encodeURIComponent(name);
+  let u = base + "?usp=pp_url&entry." + FORM_ENTRY_ID + "=" + encodeURIComponent(name);
+  if(volunteer && VOLUNTEER_READY){
+    u += "&entry." + FORM_VOLUNTEER_ENTRY_ID + "=" + encodeURIComponent(VOLUNTEER_VALUE);
+  }
+  return u;
 }
 
 const V = [
@@ -443,9 +430,8 @@ const LEADS = [
   {n:"A drive-able single lodge for 30+", w:"Catskills / Berkshires / Finger Lakes", d:"Genuinely scarce — most single homes in these regions cap ~12–16. I can keep hunting if you want a 4th one-roof option near home."}
 ];
 
-let sort="dist", fDrive=false, fRoof=false;
+let sort="dist", fDrive=false, fRoof=false, volunteer=false;
 const grid=document.getElementById("grid");
-const statEl=document.getElementById("storestat");
 
 /* Tiny escapers so the documented "edit a venue" path (see README) can't break
    rendering or inject markup if a future venue value contains < > & " or a
@@ -455,9 +441,10 @@ function safeUrl(u){return /^https?:\/\//i.test(u)?u:"#";}
 function flagsHTML(o){return o.flags.map(f=>`<span class="flag ${f.ok?'ok':''}">${f.ok?'✓':'🚩'} ${esc(f.t)}</span>`).join("");}
 
 function card(o){
+  const vlabel = volunteer ? "Vote &amp; volunteer →" : "Vote for this →";
   const foot = FORM_CONFIGURED
-    ? `<a class="pick" href="${voteLink(o.name)}" target="_blank" rel="noopener">Vote for this →</a>
-       <span class="meta">opens the ballot, pre-picked</span>`
+    ? `<a class="pick" href="${voteLink(o.name, volunteer)}" target="_blank" rel="noopener">${vlabel}</a>
+       <span class="meta">${volunteer ? "vote + your offer to help" : "opens the ballot, pre-picked"}</span>`
     : `<button class="pick off" disabled aria-disabled="true" title="Voting isn't set up yet — see README.md">Vote for this →</button>
        <span class="meta">preview</span>`;
   return `<article class="card" data-id="${esc(o.id)}">
@@ -500,33 +487,10 @@ function renderLeads(){
 }
 
 function wireForm(){
-  const note=document.getElementById("setupNote");
-  const cta=document.getElementById("voteCta");
-  const results=document.getElementById("results");
-  const chart=document.getElementById("resultsChart");
-
-  // vote buttons + setup banner
-  if(FORM_CONFIGURED){
-    note.hidden=true;
-    statEl.textContent="Voting is live. Tap a venue's “Vote for this” to open the ballot pre-picked, sign in, and submit. The tally below is anonymous — only the organizer sees who voted.";
-  }else{
-    note.hidden=false;
-    statEl.textContent="Setup needed: paste your Google Form details into the top of this file's script (see README.md). Until then the cards are a preview and the vote buttons are inactive.";
-  }
-
-  // embedded anonymous tally — the venue-only published chart (never has emails)
-  if(CHART_CONFIGURED){
-    chart.src=FORM_CHART_EMBED_SRC;
-    results.hidden=false;
-    cta.href="#results";
-    cta.classList.remove("off");
-    cta.removeAttribute("aria-disabled");
-  }else{
-    results.hidden=true;
-    cta.removeAttribute("href");
-    cta.classList.add("off");
-    cta.setAttribute("aria-disabled","true");
-  }
+  // show the setup banner only until voting is configured; show the volunteer
+  // toggle only once its question's entry id is pasted in
+  document.getElementById("setupNote").hidden = FORM_CONFIGURED;
+  document.getElementById("volunteer").hidden = !VOLUNTEER_READY;
 }
 
 document.querySelectorAll("[data-sort]").forEach(b=>b.addEventListener("click",()=>{
@@ -536,6 +500,8 @@ document.querySelectorAll("[data-sort]").forEach(b=>b.addEventListener("click",(
 }));
 document.getElementById("fDrive").addEventListener("click",function(){fDrive=!fDrive; this.setAttribute("aria-pressed",fDrive?"true":"false"); render();});
 document.getElementById("fRoof").addEventListener("click",function(){fRoof=!fRoof; this.setAttribute("aria-pressed",fRoof?"true":"false"); render();});
+const volChk=document.getElementById("volunteerChk");
+if(volChk) volChk.addEventListener("change",()=>{ volunteer=volChk.checked; render(); });
 
 document.getElementById("spotCount").textContent=V.length;
 renderLeads(); render(); wireForm();
