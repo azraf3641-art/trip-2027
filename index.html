@@ -19,7 +19,38 @@
     --ink:#16323a; --soft:#566a70; --paper:#eef2ee; --card:#fff; --line:#dde5df;
     --water:#1f7a74; --deep:#0f4f4a; --sun:#dd8838; --coral:#c8503f; --green:#3f8f5b;
     --shadow:0 1px 2px rgba(20,50,58,.06),0 8px 24px rgba(20,50,58,.07);
+    color-scheme:light;
   }
+  /* ---- Dark theme: override the palette vars, then a few hardcoded pastels ---- */
+  [data-theme="dark"]{
+    color-scheme:dark;
+    --ink:#e7efed; --soft:#9db2af; --paper:#0e1a1c; --card:#15272a; --line:#293e41;
+    --water:#5cc4ba; --deep:#0c4641; --sun:#e7a25c; --coral:#e0806f; --green:#6fcf97;
+    --shadow:0 1px 2px rgba(0,0,0,.45),0 10px 28px rgba(0,0,0,.55);
+  }
+  [data-theme="dark"] body{background-image:radial-gradient(circle at 1px 1px,rgba(92,196,186,.07) 1px,transparent 0);}
+  [data-theme="dark"] .tally b,[data-theme="dark"] .meta b{color:var(--water);}
+  [data-theme="dark"] .toplink,[data-theme="dark"] .meta a{border-color:#2c524d;}
+  [data-theme="dark"] .toplink:hover{border-color:var(--water);}
+  [data-theme="dark"] .lg.v,[data-theme="dark"] .badge.v,[data-theme="dark"] .flag.ok{color:#7fd9a3;background:#16352a;border-color:#2f5e48;}
+  [data-theme="dark"] .lg.q,[data-theme="dark"] .badge.q{color:#e3b667;background:#33290f;border-color:#574820;}
+  [data-theme="dark"] .lg.f,[data-theme="dark"] .flag{color:#ec9384;background:#371d19;border-color:#6a3a32;}
+  [data-theme="dark"] .price .amt.q{color:#e3b667;}
+  [data-theme="dark"] .foot code{background:#1d3033;}
+  [data-theme="dark"] .setupnote{background:#33290f;border-color:#574820;color:#e6c98f;}
+  [data-theme="dark"] .setupnote b{color:#f3e2bd;}
+  [data-theme="dark"] .setupnote code{background:#473813;color:#f3e2bd;}
+  [data-theme="dark"] .pick.off,[data-theme="dark"] .pick:disabled,[data-theme="dark"] .pick.off:hover,[data-theme="dark"] .pick:disabled:hover{background:#334845;color:#9db2af;}
+  [data-theme="dark"] .votebtn.off{background:#334845;color:#8aa09b;}
+  [data-theme="dark"] button.chip[aria-pressed="true"]{color:#08211f;}
+
+  /* header row + theme toggle button */
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
+  .themebtn{font-family:'Spline Sans Mono',monospace;font-size:12px;cursor:pointer;background:var(--card);color:var(--soft);border:1px solid var(--line);padding:7px 12px;border-radius:99px;white-space:nowrap;box-shadow:var(--shadow);}
+  .themebtn:hover{border-color:var(--water);color:var(--ink);}
+
+  /* smooth theme transition (disabled under prefers-reduced-motion below) */
+  body,.card,.readme,.votebar,.leads,.foot,.setupnote,button.chip,.pick,.themebtn{transition:background-color .25s ease,color .25s ease,border-color .25s ease;}
   *{box-sizing:border-box;}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.5;
     background-image:radial-gradient(circle at 1px 1px,rgba(31,122,116,.06) 1px,transparent 0);background-size:22px 22px;}
@@ -125,12 +156,27 @@
   .storestat{font-family:'Spline Sans Mono',monospace;font-size:11.5px;color:var(--soft);margin-top:6px;}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
+<script>
+/* Set the theme BEFORE first paint to avoid a flash of the wrong colors.
+   localStorage + the OS preference are local-only browser APIs — no network,
+   no third party. */
+(function(){
+  try{
+    var t=localStorage.getItem('trip2027_theme');
+    if(t!=='dark'&&t!=='light'){ t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'; }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){ document.documentElement.setAttribute('data-theme','light'); }
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <p class="eyebrow">Biennial trip · summer 2027 · pick our spot</p>
-    <h1>The 2027 Shortlist</h1>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Biennial trip · summer 2027 · pick our spot</p>
+      <h1>The 2027 Shortlist</h1>
+    </div>
+    <button id="themeToggle" class="themebtn" type="button" aria-label="Toggle dark mode" aria-pressed="false">🌙 Dark</button>
   </header>
 
   <div class="setupnote" id="setupNote" hidden>
@@ -467,6 +513,22 @@ document.getElementById("fRoof").addEventListener("click",function(){fRoof=!fRoo
 
 document.getElementById("spotCount").textContent=V.length;
 renderLeads(); render(); wireForm();
+
+/* ---- Dark mode toggle (persists to localStorage; defaults to OS setting) ---- */
+const themeBtn=document.getElementById("themeToggle");
+function setTheme(t,persist){
+  const dark = t==="dark";
+  document.documentElement.setAttribute("data-theme", dark?"dark":"light");
+  themeBtn.textContent = dark ? "☀️ Light" : "🌙 Dark";
+  themeBtn.setAttribute("aria-pressed", dark?"true":"false");
+  if(persist){ try{ localStorage.setItem("trip2027_theme", dark?"dark":"light"); }catch(e){} }
+}
+// sync the button label with whatever the head script already applied (no flash)
+setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"dark":"light", false);
+themeBtn.addEventListener("click", ()=>{
+  const dark = document.documentElement.getAttribute("data-theme")==="dark";
+  setTheme(dark?"light":"dark", true);
+});
 </script>
 </body>
 </html>
