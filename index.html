@@ -139,6 +139,12 @@
   .meta a{color:var(--water);text-decoration:none;border-bottom:1px solid #cfe2df;}
   .meta b{color:var(--deep);}
 
+  .results{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
+  .results h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
+  .results .sub{font-size:13px;color:var(--soft);margin:0 0 12px;}
+  .chartwrap{width:100%;border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--line);}
+  .chartwrap iframe{display:block;width:100%;height:420px;border:0;}
+
   .leads{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
   .leads h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
   .leads .sub{font-size:13px;color:var(--soft);margin:0 0 12px;}
@@ -196,8 +202,8 @@
   </section>
 
   <div class="votebar">
-    <p><b>How to vote:</b> tap <b>Vote for this</b> on any venue — a Google Form opens with that spot already selected, so you just hit <b>Submit</b>. One pick per person; change it anytime by voting again. No login, nothing to install. Watch the running tally with <b>See live results</b>.</p>
-    <a class="votebtn" id="voteCta" target="_blank" rel="noopener">See live results →</a>
+    <p><b>How to vote:</b> tap <b>Vote for this</b> on any venue — a Google Form opens with that spot already selected. Sign in with Google and hit <b>Submit</b>. <b>One vote per person</b> — to change your pick, reopen the form and edit your response. Your vote is <b>anonymous</b> to everyone but the organizer. The running tally below is anonymous too.</p>
+    <a class="votebtn" id="voteCta">See live results →</a>
   </div>
 
   <div class="controls">
@@ -211,6 +217,12 @@
   </div>
 
   <div class="grid" id="grid"></div>
+
+  <section class="results" id="results" hidden>
+    <h2>Live results</h2>
+    <p class="sub">Anonymous running tally — vote counts per venue only, no names or emails. Refreshes a few minutes after each vote.</p>
+    <div class="chartwrap"><iframe id="resultsChart" title="Live vote tally (anonymous)" loading="lazy" referrerpolicy="no-referrer"></iframe></div>
+  </section>
 
   <section class="leads" id="leads">
     <h2 id="leadsHeading">5 more candidates — promising, but I haven't verified them yet</h2>
@@ -231,28 +243,27 @@
 /* =========================================================================
    HOW VOTING WORKS — and why there is NO backend
    -------------------------------------------------------------------------
-   This is a 100% static page: vanilla HTML/CSS/JS, no build step, no server,
-   no database, and no third-party JavaScript loaded at runtime. It is safe to
-   double-click locally (file://) and to host free on GitHub Pages.
+   This is a near-static page: vanilla HTML/CSS/JS, no build step, no server,
+   no database, no SDK. The only embedded third-party content is Google Fonts
+   and an OPTIONAL results-chart iframe (your OWN published Google chart, see
+   below). Safe to double-click locally (file://) and to host free on Pages.
 
    Votes are collected by a Google Form whose single multiple-choice question
-   lists these venues. Tapping "Vote for this" on a card opens that Form with
-   the venue PRE-SELECTED — the voter just taps Submit. Everyone watches the
-   running tally on the Form's own live results-summary page ("See live
-   results").
+   lists these venues. Tapping "Vote for this" opens the Form with the venue
+   PRE-SELECTED; the voter signs in (Verified email) and submits. "Limit to 1
+   response" gives one real vote per person, changeable by editing the response.
 
-   Why this instead of Supabase / Firebase / a Cloudflare Worker?
-     • Zero dependencies, zero install, zero secrets in the page, and nothing
-       third-party executing in your friends' browsers — the smallest possible
-       security surface. (No anon keys, no SDK, no CDN script.)
-     • Google already stores + aggregates responses and renders a live chart
-       for free: no schema, no API keys, no CORS to manage.
-     • Trade-offs accepted, honestly: (1) the live tally lives on Google's
-       results page one tap away, not embedded here — Google blocks embedding
-       it (X-Frame-Options: DENY). (2) Voting is "open the pre-filled form,
-       Submit", not a single in-place tap. (3) With login off, a friend could
-       vote twice — fine for a casual poll. For ~30 friends this is the right
-       simplicity/robustness call. Full setup is in README.md.
+   The tally voters see ("See live results") is ANONYMOUS: a chart PUBLISHED
+   from the linked Sheet over ONLY the venue column — vote counts, no names, no
+   emails — embedded below. Collected emails stay private to the organizer
+   (Responses tab / linked Sheet). The Form's own public results summary is
+   deliberately turned OFF so emails can never leak. See README "Privacy".
+
+   Why a Google Form instead of Supabase / Firebase / a Worker? Zero backend to
+   run, zero secrets in the page; Google stores + aggregates + charts for free;
+   works from GitHub Pages and file://. Trade-offs: voters sign in with Google,
+   and the embedded chart refreshes on a delay of a few minutes (not instant).
+   Full setup is in README.md.
    ========================================================================= */
 
 /* ===== PASTE YOUR GOOGLE FORM INFO HERE — only these three values =====
@@ -269,21 +280,24 @@ const FORM_VIEWFORM_URL = "https://docs.google.com/forms/d/e/REPLACE_WITH_FORM_I
 //    Paste digits only — no "entry." prefix.
 const FORM_ENTRY_ID = "REPLACE_WITH_ENTRY_ID";
 
-// 3) Public live-results page — take your editor URL (.../forms/d/<id>/edit)
-//    and swap "/edit" for "/viewanalytics".
-//    NOTE: this path is /forms/d/<id>/ with NO "e" — it is a DIFFERENT id and
-//    path from the /d/e/ vote URL above. Don't try to derive one from the other.
-const FORM_RESULTS_URL = "https://docs.google.com/forms/d/REPLACE_WITH_RESULTS_FORM_ID/viewanalytics";
+// 3) LIVE TALLY (embedded + anonymous): a chart PUBLISHED from the linked
+//    responses Sheet, built over ONLY the venue column — so it shows vote
+//    counts and NEVER any emails. In the Sheet, build a small venue tally and
+//    chart it, then chart ⋮ menu > "Publish chart" > Embed > Interactive, and
+//    copy the iframe's src (a
+//    https://docs.google.com/spreadsheets/d/e/.../pubchart?oid=...&format=interactive
+//    URL). Paste that src here. We DON'T use the Form's own results summary —
+//    it's public and could expose collected emails (see README "Privacy").
+const FORM_CHART_EMBED_SRC = "REPLACE_WITH_CHART_EMBED_SRC";
 /* ===================================================================== */
 
-// The page treats itself as "not set up yet" until ALL THREE values are real.
-// The vote URL and the results URL use DIFFERENT placeholder tokens on purpose,
-// so a global find-replace of one can't silently mis-fill the other. The entry
-// id must be digits only.
+// Voting turns on once the prefilled-link pieces (1 + 2) are real; the live
+// results chart (3) turns on independently once its embed src is pasted. Either
+// can stay a placeholder without breaking the page.
 const FORM_CONFIGURED =
   !FORM_VIEWFORM_URL.includes("REPLACE_WITH") &&
-  !FORM_RESULTS_URL.includes("REPLACE_WITH") &&
   /^[0-9]+$/.test(FORM_ENTRY_ID);
+const CHART_CONFIGURED = !FORM_CHART_EMBED_SRC.includes("REPLACE_WITH");
 
 /* Build a one-tap prefilled vote link for a venue.
    The venue name MUST match the Form option text EXACTLY (spelling, case,
@@ -488,18 +502,30 @@ function renderLeads(){
 function wireForm(){
   const note=document.getElementById("setupNote");
   const cta=document.getElementById("voteCta");
+  const results=document.getElementById("results");
+  const chart=document.getElementById("resultsChart");
+
+  // vote buttons + setup banner
   if(FORM_CONFIGURED){
     note.hidden=true;
-    cta.href=FORM_RESULTS_URL;
-    cta.classList.remove("off");
-    cta.removeAttribute("aria-disabled");
-    statEl.textContent="Voting is live. Tap a venue's “Vote for this” to open the ballot with that spot pre-picked, then hit Submit. Track the tally any time with “See live results”.";
+    statEl.textContent="Voting is live. Tap a venue's “Vote for this” to open the ballot pre-picked, sign in, and submit. The tally below is anonymous — only the organizer sees who voted.";
   }else{
     note.hidden=false;
+    statEl.textContent="Setup needed: paste your Google Form details into the top of this file's script (see README.md). Until then the cards are a preview and the vote buttons are inactive.";
+  }
+
+  // embedded anonymous tally — the venue-only published chart (never has emails)
+  if(CHART_CONFIGURED){
+    chart.src=FORM_CHART_EMBED_SRC;
+    results.hidden=false;
+    cta.href="#results";
+    cta.classList.remove("off");
+    cta.removeAttribute("aria-disabled");
+  }else{
+    results.hidden=true;
     cta.removeAttribute("href");
     cta.classList.add("off");
     cta.setAttribute("aria-disabled","true");
-    statEl.textContent="Setup needed: paste your Google Form link into the top of this file's script (see README.md). Until then the cards are a preview and the vote buttons are inactive.";
   }
 }
 
