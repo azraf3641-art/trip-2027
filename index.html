@@ -217,9 +217,9 @@
 
   <div class="controls">
     <span class="label">Sort</span>
-    <button class="chip" data-sort="dist" aria-pressed="true">Closest to NYC</button>
+    <button class="chip" data-sort="order" aria-pressed="true">Similar to Original</button>
+    <button class="chip" data-sort="dist" aria-pressed="false">Closest to NYC</button>
     <button class="chip" data-sort="price" aria-pressed="false">Cheapest (verified)</button>
-    <button class="chip" data-sort="order" aria-pressed="false">Original</button>
     <button class="chip" id="fDrive" data-f="drive" aria-pressed="false">Drive-able (≤3 hr)</button>
     <button class="chip" id="fRoof" data-f="roof" aria-pressed="false">One-roof only</button>
     <span class="tally"><b id="spotCount">11</b> spots · one pick each</span>
@@ -454,7 +454,7 @@ const LEADS = [
   {n:"A drive-able single lodge for 30+", w:"Catskills / Berkshires / Finger Lakes", d:"Genuinely scarce — most single homes in these regions cap ~12–16. I can keep hunting if you want a 4th one-roof option near home."}
 ];
 
-let sort="dist", fDrive=false, fRoof=false, volunteer=false;
+let sort="order", fDrive=false, fRoof=false, volunteer=false;
 const selected=new Set();
 const grid=document.getElementById("grid");
 
