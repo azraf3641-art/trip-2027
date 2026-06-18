@@ -4,14 +4,14 @@ A single static page (`index.html`) that shows the venue shortlist and collects
 votes. **No backend, no build step, no database, no install, no secrets, and no
 third-party JavaScript running in the page.** (Google Fonts loads via `<link>`.)
 
-**How voting works:** votes go to a **Google Form** (one multiple-choice
-question = which venue). Each card's **“Vote for this”** button opens the Form
-with the venue already selected — the voter signs in with Google and taps
-**Submit**. **One vote per person**, changeable by editing their response. An
-optional **“Count me in to help organize”** toggle at the top of the page adds a
-volunteer flag to that person's vote. **Results are private to the organizer** —
-there is no public tally on the page; everything lands in your linked Google
-Sheet. Host the page free on **GitHub Pages**.
+**How voting works:** votes go to a **Google Form** (one **checkboxes** question =
+which venues). On the page you tap **Add to my picks** on as many venues as you'd
+be happy with, then **Submit my picks** opens the Form with them all pre-checked —
+the voter signs in with Google and taps **Submit**. **One ballot per person**,
+changeable by editing their response. An optional **“Count me in to help
+organize”** toggle adds a volunteer flag to that ballot. **Results are private to
+the organizer** — no public tally on the page; everything lands in your linked
+Google Sheet. Host the page free on **GitHub Pages**.
 
 ---
 
@@ -33,9 +33,10 @@ so it never looks broken.
 
 ### 1. Create the Form
 1. Go to **https://forms.google.com** → **Blank form**. Title it *Trip venue vote 2027*.
-2. **Question 1 — the vote.** Type **Multiple choice**, text *Which venue?*. Add
-   one option per venue, typed **exactly** as the card names (copy-paste so they
-   match byte-for-byte):
+2. **Question 1 — the vote.** Type **Checkboxes** (so voters can pick more than
+   one venue), text *Which venues would you be happy with?*. Add one option per
+   venue, typed **exactly** as the card names (copy-paste so they match
+   byte-for-byte):
    ```
    Laurel Island
    The Treehouse
@@ -73,7 +74,7 @@ Under the **Presentation** section:
 
 ### 3. Get ONE prefilled link → all your values at once
 1. Form editor → **⋮ menu** (top-right) → **“Get pre-filled link.”**
-2. In the preview, **pick any one venue** AND **check the “Yes, I'll help
+2. In the preview, **check two or three venues** AND **check the “Yes, I'll help
    organize” box**, then **“Get link”** → **“COPY LINK.”**
 3. The copied URL looks like (ids are examples):
    ```
@@ -98,13 +99,14 @@ Leave `VOLUNTEER_VALUE` as `"Yes, I'll help organize"` (it must match the Form
 option from step 1.3).
 
 ### 5. Test
-- Double-click `index.html`: the banner is gone, vote buttons active, and the
-  **“Count me in to help organize”** toggle shows at the top.
-- Flip the toggle on → a card's button becomes **“Vote & volunteer →”** → click it
-  → the Form opens with that venue selected **and** the volunteer box checked →
-  sign in → Submit.
-- Open your linked **Sheet**: the new row should show the **email**, the **venue**,
-  and **“Yes, I'll help organize.”** Two different Google accounts can each vote.
+- Double-click `index.html`: the banner is gone, the cards show **Add to my
+  picks**, and the volunteer toggle shows at the top.
+- Tap **Add to my picks** on a few venues → a **Submit my picks** bar appears at
+  the bottom → (optionally flip the volunteer toggle) → click **Submit my picks** →
+  the Form opens with those venues **pre-checked** (and the volunteer box if set)
+  → sign in → Submit.
+- Open your linked **Sheet**: the new row should show the **email**, the **venues**
+  picked, and **“Yes, I'll help organize”** if checked.
 
 ---
 

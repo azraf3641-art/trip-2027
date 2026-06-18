@@ -146,6 +146,14 @@
   .vtoggle{display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:600;cursor:pointer;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:9px 15px;white-space:nowrap;}
   .vtoggle input{width:17px;height:17px;cursor:pointer;accent-color:var(--water);}
 
+  .pick.on{background:var(--coral);}
+  .pick.on:hover{background:#b3402f;}
+  .submitbar{position:sticky;bottom:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px;background:var(--deep);color:#fff;border-radius:12px;padding:12px 18px;box-shadow:0 -2px 18px rgba(20,50,58,.18);}
+  .submitbar #submitCount{font-family:'Spline Sans Mono',monospace;font-size:13px;color:#dceeec;}
+  .submitbtn{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;background:var(--sun);color:#2a1804;border:none;padding:10px 18px;border-radius:9px;cursor:pointer;margin-left:auto;}
+  .submitbtn:hover{background:#e7a25c;}
+  .submitbtn:disabled{background:#5d726d;color:#b9c9c5;cursor:not-allowed;}
+
   .leads{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
   .leads h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
   .leads .sub{font-size:13px;color:var(--soft);margin:0 0 12px;}
@@ -201,7 +209,7 @@
   </section>
 
   <div class="votebar">
-    <p><b>How to vote:</b> tap <b>Vote for this</b> on any venue — a Google Form opens with that spot already selected. Sign in with Google and hit <b>Submit</b>. <b>One vote per person</b> — to change your pick, reopen the form and edit your response. Votes are private to the organizer; there's no public tally here.</p>
+    <p><b>How to vote:</b> tap <b>Add to my picks</b> on every venue you'd be happy with — pick as many as you like — then hit <b>Submit my picks</b> at the bottom. A Google Form opens with them all pre-checked; sign in and submit. <b>One ballot per person</b> — change it anytime by editing your response. Votes are private to the organizer; there's no public tally here.</p>
   </div>
 
   <div class="controls">
@@ -215,6 +223,11 @@
   </div>
 
   <div class="grid" id="grid"></div>
+
+  <div class="submitbar" id="submitBar" hidden>
+    <span id="submitCount">No venues picked yet</span>
+    <button class="submitbtn" id="submitPicks" disabled>Submit my picks →</button>
+  </div>
 
   <section class="leads" id="leads">
     <h2 id="leadsHeading">5 more candidates — promising, but I haven't verified them yet</h2>
@@ -233,10 +246,12 @@
    (Google Fonts loads via <link>.) Safe to double-click locally (file://) and to
    host free on GitHub Pages.
 
-   Votes are collected by a Google Form whose single multiple-choice question
-   lists these venues. Tapping "Vote for this" opens the Form with the venue
-   PRE-SELECTED; the voter signs in (Verified email) and submits. "Limit to 1
-   response" gives one real vote per person, changeable by editing the response.
+   Votes are collected by a Google Form whose checkboxes question lists these
+   venues. On the page you tap to ADD any venues you'd be happy with, then
+   "Submit my picks" opens the Form with all of them PRE-CHECKED (checkboxes
+   accept the same entry.<id> repeated once per value); the voter signs in
+   (Verified email) and submits. "Limit to 1 response" gives one ballot per
+   person, changeable by editing the response.
 
    Results are PRIVATE to the organizer — there is intentionally NO public tally
    on this page. Each vote (plus an optional "I'll help organize" volunteer flag)
@@ -257,12 +272,12 @@
 
 // 1) PREFILL / VIEWFORM base — the part of the "Get pre-filled link" URL
 //    BEFORE the "?". Note the /d/e/ path and that it ends in /viewform.
-const FORM_VIEWFORM_URL = "https://docs.google.com/forms/d/e/REPLACE_WITH_FORM_ID/viewform";
+const FORM_VIEWFORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf9o6l6_OO6yq81QZuqcjvAJrsIp6zCzU-yATCsUWMu52wtcA/viewform";
 
 // 2) The digits from "entry.<digits>=" in that same pre-filled link.
 //    ONE id covers every venue (they're all answers to the same question).
 //    Paste digits only — no "entry." prefix.
-const FORM_ENTRY_ID = "REPLACE_WITH_ENTRY_ID";
+const FORM_ENTRY_ID = "1585293707";
 
 // 3) (OPTIONAL) VOLUNTEER capture. Add a 2nd question to the Form like
 //    "Want to help organize the trip?" with ONE checkbox option whose text is
@@ -271,7 +286,7 @@ const FORM_ENTRY_ID = "REPLACE_WITH_ENTRY_ID";
 //    page; flipping it on adds the volunteer flag to that person's single vote.
 //    Leave the placeholder to hide the volunteer section. (Organizer-only data —
 //    it lands in your private responses Sheet, never shown on the page.)
-const FORM_VOLUNTEER_ENTRY_ID = "REPLACE_WITH_VOLUNTEER_ENTRY_ID";
+const FORM_VOLUNTEER_ENTRY_ID = "1784183723";
 const VOLUNTEER_VALUE = "Yes, I'll help organize"; // must match the Form option text EXACTLY
 /* ===================================================================== */
 
@@ -289,11 +304,15 @@ const VOLUNTEER_READY = /^[0-9]+$/.test(FORM_VOLUNTEER_ENTRY_ID);
    spacing, punctuation) or Google silently ignores it and pre-selects nothing.
    encodeURIComponent is applied to the venue value ONLY (handles spaces, &,
    apostrophes, accents, etc.) — never to the base URL or the "entry." key. */
-function voteLink(name, volunteer){
-  // strip any stray query the organizer may have left on the base URL, so we
-  // never emit a double "?...?..." link
+// Build a Google Forms prefilled link that PRE-CHECKS every selected venue
+// (a checkboxes question accepts the same entry.<id> repeated once per value),
+// plus the optional volunteer flag. encodeURIComponent on each value only.
+function ballotLink(names, volunteer){
   const base = FORM_VIEWFORM_URL.split("?")[0];
-  let u = base + "?usp=pp_url&entry." + FORM_ENTRY_ID + "=" + encodeURIComponent(name);
+  let u = base + "?usp=pp_url";
+  for(const name of names){
+    u += "&entry." + FORM_ENTRY_ID + "=" + encodeURIComponent(name);
+  }
   if(volunteer && VOLUNTEER_READY){
     u += "&entry." + FORM_VOLUNTEER_ENTRY_ID + "=" + encodeURIComponent(VOLUNTEER_VALUE);
   }
@@ -433,6 +452,7 @@ const LEADS = [
 ];
 
 let sort="dist", fDrive=false, fRoof=false, volunteer=false;
+const selected=new Set();
 const grid=document.getElementById("grid");
 
 /* Tiny escapers so the documented "edit a venue" path (see README) can't break
@@ -443,13 +463,13 @@ function safeUrl(u){return /^https?:\/\//i.test(u)?u:"#";}
 function flagsHTML(o){return o.flags.map(f=>`<span class="flag ${f.ok?'ok':''}">${f.ok?'✓':'🚩'} ${esc(f.t)}</span>`).join("");}
 
 function card(o){
-  const vlabel = volunteer ? "Vote &amp; volunteer →" : "Vote for this →";
+  const isSel = selected.has(o.id);
   const foot = FORM_CONFIGURED
-    ? `<a class="pick" href="${voteLink(o.name, volunteer)}" target="_blank" rel="noopener">${vlabel}</a>
-       <span class="meta">${volunteer ? "vote + your offer to help" : "opens the ballot, pre-picked"}</span>`
-    : `<button class="pick off" disabled aria-disabled="true" title="Voting isn't set up yet — see README.md">Vote for this →</button>
+    ? `<button class="pick ${isSel?'on':''}" data-pick="${esc(o.id)}" aria-pressed="${isSel}">${isSel?'✓ Added':'Add to my picks'}</button>
+       <span class="meta">${isSel?'in your ballot':'tap to add'}</span>`
+    : `<button class="pick off" disabled aria-disabled="true" title="Voting isn't set up yet — see README.md">Add to my picks</button>
        <span class="meta">preview</span>`;
-  return `<article class="card" data-id="${esc(o.id)}">
+  return `<article class="card ${isSel?'picked':''}" data-id="${esc(o.id)}">
     <div class="tile k-${esc(o.kind)}"><span>${esc(o.kindLabel)}</span></div>
     <div class="body">
       <a class="toplink" href="${safeUrl(o.url)}" target="_blank" rel="noopener">Photos &amp; booking ↗</a>
@@ -482,7 +502,26 @@ function sorted(){
   else l.sort((a,b)=>a.order-b.order);
   return l;
 }
-function render(){ grid.innerHTML=sorted().map(card).join(""); }
+function render(){
+  grid.innerHTML=sorted().map(card).join("");
+  grid.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>toggleSelect(b.getAttribute("data-pick"))));
+  updateSubmitBar();
+}
+function toggleSelect(id){
+  if(selected.has(id)) selected.delete(id); else selected.add(id);
+  render();
+}
+function updateSubmitBar(){
+  const bar=document.getElementById("submitBar");
+  if(!FORM_CONFIGURED){ bar.hidden=true; return; }
+  bar.hidden=false;
+  const n=selected.size;
+  document.getElementById("submitCount").textContent =
+    n===0 ? "No venues picked yet" : (n+" pick"+(n===1?"":"s")+" selected — opens the form pre-checked");
+  const btn=document.getElementById("submitPicks");
+  btn.disabled = n===0;
+  btn.textContent = (volunteer && n>0) ? "Submit my picks + volunteer →" : "Submit my picks →";
+}
 function renderLeads(){
   document.getElementById("leadsHeading").textContent=LEADS.length+" more candidates — promising, but I haven't verified them yet";
   document.getElementById("leadList").innerHTML=LEADS.map(L=>`<div class="lead"><b>${esc(L.n)}</b> — <span class="det">${esc(L.w)}. ${esc(L.d)}</span></div>`).join("");
@@ -503,7 +542,12 @@ document.querySelectorAll("[data-sort]").forEach(b=>b.addEventListener("click",(
 document.getElementById("fDrive").addEventListener("click",function(){fDrive=!fDrive; this.setAttribute("aria-pressed",fDrive?"true":"false"); render();});
 document.getElementById("fRoof").addEventListener("click",function(){fRoof=!fRoof; this.setAttribute("aria-pressed",fRoof?"true":"false"); render();});
 const volChk=document.getElementById("volunteerChk");
-if(volChk) volChk.addEventListener("change",()=>{ volunteer=volChk.checked; render(); });
+if(volChk) volChk.addEventListener("change",()=>{ volunteer=volChk.checked; updateSubmitBar(); });
+document.getElementById("submitPicks").addEventListener("click",()=>{
+  if(!FORM_CONFIGURED || selected.size===0) return;
+  const names=V.filter(o=>selected.has(o.id)).map(o=>o.name);
+  window.open(ballotLink(names, volunteer), "_blank", "noopener");
+});
 
 document.getElementById("spotCount").textContent=V.length;
 renderLeads(); render(); wireForm();
