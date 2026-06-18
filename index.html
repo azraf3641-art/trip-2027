@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<!--
+  The Trip · 2027 Shortlist — a 100% static voting page.
+  No backend, no build step, no database, no third-party JS at runtime.
+  Votes are collected by a Google Form (see README.md). Safe to double-click
+  locally and to host free on GitHub Pages. Backend rationale is in the
+  <script> comment near the top.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Trip · 2027 Shortlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16323a; --soft:#566a70; --paper:#eef2ee; --card:#fff; --line:#dde5df;
+    --water:#1f7a74; --deep:#0f4f4a; --sun:#dd8838; --coral:#c8503f; --green:#3f8f5b;
+    --shadow:0 1px 2px rgba(20,50,58,.06),0 8px 24px rgba(20,50,58,.07);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.5;
+    background-image:radial-gradient(circle at 1px 1px,rgba(31,122,116,.06) 1px,transparent 0);background-size:22px 22px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 18px 70px;}
+  .eyebrow{font-family:'Spline Sans Mono',monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--water);margin:0 0 8px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(32px,5.5vw,54px);line-height:1.03;margin:0 0 14px;letter-spacing:-.01em;}
+
+  /* setup banner shown only when the Google Form isn't configured yet */
+  .setupnote{background:#fbf1df;border:1px solid #e6d3ad;border-left:4px solid var(--sun);border-radius:12px;padding:14px 18px;margin:0 0 18px;font-size:13.5px;color:#7a5a1a;box-shadow:var(--shadow);}
+  .setupnote b{color:#5a4212;}
+  .setupnote code{font-family:'Spline Sans Mono',monospace;font-size:12px;background:#f6e6c8;padding:1px 5px;border-radius:4px;}
+
+  /* fine print on top */
+  .readme{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--water);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);margin:0 0 22px;}
+  .readme h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 10px;}
+  .readme p{font-size:13.5px;color:var(--soft);margin:0 0 8px;}
+  .readme b{color:var(--ink);font-weight:600;}
+  .readme .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .lg{font-family:'Spline Sans Mono',monospace;font-size:11px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--soft);}
+  .lg.v{color:var(--green);background:#e8f3ec;border-color:#c4e0cd;}
+  .lg.q{color:#9a6418;background:#fbf1df;border-color:#e6d3ad;}
+  .lg.f{color:var(--coral);background:#fbe9e6;border-color:#f0c4bc;}
+
+  .votebar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--deep);color:#fff;border-radius:12px;padding:14px 18px;margin:0 0 22px;}
+  .votebar p{margin:0;font-size:13.5px;color:#dceeec;flex:1;min-width:240px;}
+  .votebar b{color:#fff;}
+  .votebtn{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;background:var(--sun);color:#2a1804;border:none;padding:10px 18px;border-radius:9px;text-decoration:none;cursor:pointer;margin-left:auto;white-space:nowrap;}
+  .votebtn:hover{background:#e7a25c;}
+  .votebtn.off{background:#5d726d;color:#b9c9c5;cursor:not-allowed;pointer-events:none;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px;}
+  .controls .label{font-family:'Spline Sans Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-right:2px;}
+  button.chip{font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);cursor:pointer;background:var(--card);border:1px solid var(--line);padding:7px 13px;border-radius:99px;}
+  button.chip:hover{border-color:var(--water);}
+  button.chip[aria-pressed="true"]{background:var(--water);border-color:var(--water);color:#fff;}
+  .tally{font-family:'Spline Sans Mono',monospace;font-size:12px;color:var(--soft);margin-left:auto;}
+  .tally b{color:var(--deep);}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px;}
+  @media(max-width:940px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:620px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;}
+  .card.picked{box-shadow:0 0 0 2px var(--water),var(--shadow);}
+  .tile{height:96px;position:relative;display:flex;align-items:flex-end;padding:10px 12px;color:#fff;}
+  .tile span{font-family:'Spline Sans Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:rgba(0,0,0,.22);padding:3px 8px;border-radius:6px;backdrop-filter:blur(2px);}
+  .k-island{background:linear-gradient(135deg,#1f7a74,#0f4f4a);}
+  .k-lake{background:linear-gradient(135deg,#3f8f5b,#1f6e57);}
+  .k-retreat{background:linear-gradient(135deg,#6a8f6f,#3f6e54);}
+  .k-camp{background:linear-gradient(135deg,#2f6e57,#16433a);}
+  .k-greatcamp{background:linear-gradient(135deg,#9a6a3a,#5e3f23);}
+
+  .body{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1;}
+  .toplink{display:inline-block;font-weight:700;font-size:13.5px;color:var(--water);text-decoration:none;border-bottom:2px solid #cfe2df;margin:0 0 11px;align-self:flex-start;}
+  .toplink:hover{color:var(--deep);border-color:var(--water);}
+  .toprow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .num{font-family:'Spline Sans Mono',monospace;font-size:11px;color:var(--soft);}
+  .badge{font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:99px;white-space:nowrap;}
+  .badge.v{color:var(--green);background:#e8f3ec;border:1px solid #c4e0cd;}
+  .badge.q{color:#9a6418;background:#fbf1df;border:1px solid #e6d3ad;}
+  .name{font-family:'Fraunces',serif;font-weight:600;font-size:21px;line-height:1.1;margin:6px 0 2px;}
+  .where{font-size:12.5px;color:var(--soft);margin:0 0 2px;}
+  .dist{font-family:'Spline Sans Mono',monospace;font-size:11.5px;color:var(--water);margin:2px 0 0;}
+
+  .seg{margin-top:11px;}
+  .seg .h{font-family:'Spline Sans Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-bottom:2px;}
+  .seg p{font-size:13px;color:var(--ink);margin:0;}
+  .seg.amen p,.seg.cap p{color:var(--soft);font-size:12.5px;}
+
+  .flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;}
+  .flag{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid #f0c4bc;color:var(--coral);background:#fbe9e6;}
+  .flag.ok{color:var(--green);background:#e8f3ec;border-color:#c4e0cd;}
+
+  .price{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line);}
+  .price .amt{font-family:'Fraunces',serif;font-weight:600;font-size:18px;}
+  .price .amt.q{font-size:15px;color:#9a6418;}
+  .price .note{font-size:11.5px;color:var(--soft);margin-top:2px;}
+
+  .cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:14px;}
+  .pick{font-family:'Inter',sans-serif;font-weight:600;font-size:13px;cursor:pointer;color:#fff;background:var(--deep);border:none;padding:8px 13px;border-radius:8px;}
+  a.pick{display:inline-block;text-decoration:none;}
+  .pick:hover{background:#0a3d39;}
+  .pick.off,.pick:disabled{background:#9fb4ad;color:#eef2ee;cursor:not-allowed;}
+  .pick.off:hover,.pick:disabled:hover{background:#9fb4ad;}
+  .meta{font-family:'Spline Sans Mono',monospace;font-size:11.5px;color:var(--soft);text-align:right;}
+  .meta a{color:var(--water);text-decoration:none;border-bottom:1px solid #cfe2df;}
+  .meta b{color:var(--deep);}
+
+  .leads{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
+  .leads h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
+  .leads .sub{font-size:13px;color:var(--soft);margin:0 0 12px;}
+  .lead{font-size:13px;color:var(--ink);padding:9px 0;border-top:1px solid var(--line);}
+  .lead b{font-weight:600;}
+  .lead .det{color:var(--soft);}
+
+  .foot{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);}
+  .foot h2{font-family:'Fraunces',serif;font-size:18px;margin:0 0 10px;}
+  .foot p{font-size:13px;color:var(--soft);margin:0 0 9px;}
+  .foot b{color:var(--ink);}
+  .foot ol{font-size:13px;color:var(--soft);padding-left:20px;margin:6px 0;}
+  .foot li{margin-bottom:5px;}
+  .foot code{font-family:'Spline Sans Mono',monospace;font-size:12px;background:#f0f4f0;padding:1px 5px;border-radius:4px;}
+  .storestat{font-family:'Spline Sans Mono',monospace;font-size:11.5px;color:var(--soft);margin-top:6px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Biennial trip · summer 2027 · pick our spot</p>
+    <h1>The 2027 Shortlist</h1>
+  </header>
+
+  <div class="setupnote" id="setupNote" hidden>
+    <b>Voting isn't switched on yet.</b> The organizer needs to make a quick Google Form and paste its link into this page (~10 min — see <code>README.md</code>). The cards below are a live preview; the <b>Vote for this</b> buttons turn on once it's configured.
+  </div>
+
+  <section class="readme">
+    <h2>Read this first — how to use the numbers</h2>
+    <p><b>Costs assume 28 people, a summer week (7 nights), lodging only, per person.</b> Food is separate unless a place is marked <i>catered</i>. The number you should compare is per-person lodging.</p>
+    <p><b>Travel isn't the deciding factor.</b> Flights anywhere here run under ~$400 round-trip and most options are drive-able, so the things that actually separate these are <b>lodging cost, drive time, and the rules</b> (alcohol policy, season windows, whether the group is split across buildings).</p>
+    <p><b>Most of these don't publish a price</b> — group venues quote on inquiry. So every card is labelled honestly: a real number with the math where it's published, or "by inquiry" where it isn't. I'm not inventing ranges anymore.</p>
+    <div class="legend">
+      <span class="lg v">✓ Verified — published / confirmed on the venue's site</span>
+      <span class="lg q">◇ By inquiry — need to request a quote</span>
+      <span class="lg f">🚩 Flag — read the catch (fragmented, season, rules, cap)</span>
+    </div>
+  </section>
+
+  <div class="votebar">
+    <p><b>How to vote:</b> tap <b>Vote for this</b> on any venue — a Google Form opens with that spot already selected, so you just hit <b>Submit</b>. One pick per person; change it anytime by voting again. No login, nothing to install. Watch the running tally with <b>See live results</b>.</p>
+    <a class="votebtn" id="voteCta" target="_blank" rel="noopener">See live results →</a>
+  </div>
+
+  <div class="controls">
+    <span class="label">Sort</span>
+    <button class="chip" data-sort="dist" aria-pressed="true">Closest to NYC</button>
+    <button class="chip" data-sort="price" aria-pressed="false">Cheapest (verified)</button>
+    <button class="chip" data-sort="order" aria-pressed="false">Original</button>
+    <button class="chip" id="fDrive" data-f="drive" aria-pressed="false">Drive-able (≤3 hr)</button>
+    <button class="chip" id="fRoof" data-f="roof" aria-pressed="false">One-roof only</button>
+    <span class="tally"><b id="spotCount">11</b> spots · one pick each</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <section class="leads" id="leads">
+    <h2 id="leadsHeading">5 more candidates — promising, but I haven't verified them yet</h2>
+    <p class="sub">From research leads (including the set you shared). I'm listing them honestly as unverified — say the word and I'll confirm capacity, price, fragmentation and a live booking link before they earn a card.</p>
+    <div id="leadList"></div>
+  </section>
+
+  <section class="foot" id="setup">
+    <h2>How this works — and how to set it up (organizer)</h2>
+    <p><b>Votes go to a Google Form; this page is just the ballot.</b> Every <b>Vote for this</b> button opens a Google Form with that venue pre-selected — tap Submit and you're counted. Everyone watches the running tally on the Form's own live results page via <b>See live results</b>. No accounts, no database, and nothing third-party runs in your friends' browsers beyond this page itself.</p>
+    <p><b>Why aren't live counts printed on each card?</b> Google lets anyone view the aggregate chart but blocks embedding it inside another page, so the honest, always-current tally is one tap away on <b>See live results</b> rather than baked into the cards. For ~30 friends that's the right trade for zero backend, zero secrets, zero install.</p>
+    <p><b>Set it up in ~10 minutes:</b> create the Form, turn on shareable results, grab the prefill link + entry id, paste <b>three values</b> into the top of this file's <code>&lt;script&gt;</code>, then deploy to GitHub Pages. Exact copy-paste steps (including how to add/edit a venue and how to reset votes) are in <code>README.md</code> next to this file.</p>
+    <p class="storestat" id="storestat">Checking setup…</p>
+  </section>
+</div>
+
+<script>
+/* =========================================================================
+   HOW VOTING WORKS — and why there is NO backend
+   -------------------------------------------------------------------------
+   This is a 100% static page: vanilla HTML/CSS/JS, no build step, no server,
+   no database, and no third-party JavaScript loaded at runtime. It is safe to
+   double-click locally (file://) and to host free on GitHub Pages.
+
+   Votes are collected by a Google Form whose single multiple-choice question
+   lists these venues. Tapping "Vote for this" on a card opens that Form with
+   the venue PRE-SELECTED — the voter just taps Submit. Everyone watches the
+   running tally on the Form's own live results-summary page ("See live
+   results").
+
+   Why this instead of Supabase / Firebase / a Cloudflare Worker?
+     • Zero dependencies, zero install, zero secrets in the page, and nothing
+       third-party executing in your friends' browsers — the smallest possible
+       security surface. (No anon keys, no SDK, no CDN script.)
+     • Google already stores + aggregates responses and renders a live chart
+       for free: no schema, no API keys, no CORS to manage.
+     • Trade-offs accepted, honestly: (1) the live tally lives on Google's
+       results page one tap away, not embedded here — Google blocks embedding
+       it (X-Frame-Options: DENY). (2) Voting is "open the pre-filled form,
+       Submit", not a single in-place tap. (3) With login off, a friend could
+       vote twice — fine for a casual poll. For ~30 friends this is the right
+       simplicity/robustness call. Full setup is in README.md.
+   ========================================================================= */
+
+/* ===== PASTE YOUR GOOGLE FORM INFO HERE — only these three values =====
+   Step-by-step (with screenshots-worth of detail) is in README.md.
+   Until you fill these in, the page shows a tidy "not set up yet" preview
+   instead of broken buttons. */
+
+// 1) PREFILL / VIEWFORM base — the part of the "Get pre-filled link" URL
+//    BEFORE the "?". Note the /d/e/ path and that it ends in /viewform.
+const FORM_VIEWFORM_URL = "https://docs.google.com/forms/d/e/REPLACE_WITH_FORM_ID/viewform";
+
+// 2) The digits from "entry.<digits>=" in that same pre-filled link.
+//    ONE id covers every venue (they're all answers to the same question).
+//    Paste digits only — no "entry." prefix.
+const FORM_ENTRY_ID = "REPLACE_WITH_ENTRY_ID";
+
+// 3) Public live-results page — take your editor URL (.../forms/d/<id>/edit)
+//    and swap "/edit" for "/viewanalytics".
+//    NOTE: this path is /forms/d/<id>/ with NO "e" — it is a DIFFERENT id and
+//    path from the /d/e/ vote URL above. Don't try to derive one from the other.
+const FORM_RESULTS_URL = "https://docs.google.com/forms/d/REPLACE_WITH_RESULTS_FORM_ID/viewanalytics";
+/* ===================================================================== */
+
+// The page treats itself as "not set up yet" until ALL THREE values are real.
+// The vote URL and the results URL use DIFFERENT placeholder tokens on purpose,
+// so a global find-replace of one can't silently mis-fill the other. The entry
+// id must be digits only.
+const FORM_CONFIGURED =
+  !FORM_VIEWFORM_URL.includes("REPLACE_WITH") &&
+  !FORM_RESULTS_URL.includes("REPLACE_WITH") &&
+  /^[0-9]+$/.test(FORM_ENTRY_ID);
+
+/* Build a one-tap prefilled vote link for a venue.
+   The venue name MUST match the Form option text EXACTLY (spelling, case,
+   spacing, punctuation) or Google silently ignores it and pre-selects nothing.
+   encodeURIComponent is applied to the venue value ONLY (handles spaces, &,
+   apostrophes, accents, etc.) — never to the base URL or the "entry." key. */
+function voteLink(name){
+  // strip any stray query the organizer may have left on the base URL, so we
+  // never emit a double "?...?..." link
+  const base = FORM_VIEWFORM_URL.split("?")[0];
+  return base + "?usp=pp_url&entry." + FORM_ENTRY_ID + "=" + encodeURIComponent(name);
+}
+
+const V = [
+  {
+    id:"laurel", order:1, kind:"island", kindLabel:"Private lake island",
+    name:"Laurel Island", where:"Lake Pocotopaug, East Hampton CT", dist:"~2.5 hr drive", driveHrs:2.5, roof:false,
+    blurb:"What we do now: a whole private island on a Connecticut lake, just us. The reason to switch is novelty, not value — at a flat rate it's about the cheapest per-head option here.",
+    amen:"Main lodge + 5 cabins an easy stroll apart; docks, swimming, kayaks, volleyball, sauna. Self-catered.",
+    cap:"Sleeps up to 39 — works comfortably from 20 to ~39, no real cap worry.",
+    flags:[{t:"Whole island, but spread across cabins — walkable",ok:true}],
+    verified:true, priceSort:500, amt:"~$500 / person", amtq:false,
+    note:"Verified flat rate: $10,000 for 20, +$500 each added person, capped 39 → ~$500/pp.",
+    src:"laurelislandct.com", url:"https://www.laurelislandct.com/"
+  },
+  {
+    id:"treehouse", order:2, kind:"lake", kindLabel:"Lake-view lodge",
+    name:"The Treehouse", where:"Lake Harmony, PA (Poconos)", dist:"~2 hr drive", driveHrs:2, roof:true,
+    blurb:"A 5,500-sq-ft log lodge built into a hillside over Lake Harmony — the closest 'everyone under one roof' option, and one of the few here with a real published price.",
+    amen:"9 BR / 5.5 ba, three stacked lake-view decks, game room + arcade, new sauna, hot tub, fire pit. Self-catered.",
+    cap:"Sleeps 28 — exactly our headcount, so zero margin if more want in.",
+    flags:[{t:"One house, everyone together",ok:true},{t:"Lake is across the street, not private",ok:false},{t:"Renters 25+; no grad groups",ok:false}],
+    verified:true, priceSort:240, amt:"from ~$240 / person", amtq:false,
+    note:"Verified base $950/night ×7 ÷28. Summer weekends + cleaning/fees push this up — get a dated quote.",
+    src:"poconomountainrentals.com", url:"https://www.poconomountainrentals.com/vacation-rental/treehouse/"
+  },
+  {
+    id:"lifebridge", order:3, kind:"retreat", kindLabel:"Catskills retreat center",
+    name:"Lifebridge Sanctuary", where:"Rosendale, NY (Hudson Valley)", dist:"~2 hr drive", driveHrs:2, roof:false,
+    blurb:"A handcrafted green retreat center on 95 quiet Catskills acres with big light-filled gathering rooms — closest thing to Laurel's 'private compound' feel that's a 2-hour drive.",
+    amen:"900-sq-ft chef's kitchen + dining for 40, pond, stone labyrinth, fire circle, trails, panoramic mountain views. Self-catered.",
+    cap:"Sleeps up to 34 residential — comfortable margin over 28.",
+    flags:[{t:"Sleeping splits between main building + Garden House (1-min walk)",ok:false},{t:"Mission-driven nonprofit — confirm they'll host a social group + alcohol",ok:false}],
+    verified:false, priceSort:9990, amt:"By inquiry", amtq:true,
+    note:"No published price (inquiry form only). Earlier '$2,500 + $30/pp' figure is not on their site — treat as unconfirmed.",
+    src:"herosjourneyfoundation.org", url:"https://herosjourneyfoundation.org/lifebridge-sanctuary/"
+  },
+  {
+    id:"albedor", order:4, kind:"greatcamp", kindLabel:"1927 Adirondack Great Camp",
+    name:"The Albedor", where:"Fourth Lake, Central Adirondacks NY", dist:"~5 hr drive", driveHrs:5, roof:false,
+    blurb:"A genuine 1927 Great Camp with 900 ft of private lake frontage — the storybook Adirondack version of taking over one place on the water. Farther, but special.",
+    amen:"17-bedroom main house, boathouse + docks, classic lodge interiors. Self-catered. Carriage house available alongside.",
+    cap:"Main house ~30; add the carriage house for more. Around our number.",
+    flags:[{t:"Main house + carriage house — mild split if you need both",ok:false}],
+    verified:false, priceSort:9991, amt:"By call", amtq:true,
+    note:"Price not published — call for rates. 7-night min; +$800 main-house cleaning. (Reported ~$25k/wk is unconfirmed.)",
+    src:"thealbedor.com", url:"https://thealbedor.com/"
+  },
+  {
+    id:"mcgee", order:5, kind:"island", kindLabel:"90-acre private island",
+    name:"McGee Island", where:"Port Clyde, Maine", dist:"~6 hr drive (or fly Portland)", driveHrs:6, roof:false,
+    blurb:"The truest heir to Laurel on this list: your own 90+ acre island off midcoast Maine, Saturday-to-Saturday, total privacy. The trade is distance.",
+    amen:"Commercial kitchen + grocery delivery (self-cater), wood-fired sauna, canoes/kayaks, motorboat, private beaches.",
+    cap:"Sleeps ~24 — about 4 short of 28, so it's tight for the full crew.",
+    flags:[{t:"Caps ~24 (under our 28)",ok:false},{t:"Whole island, walkable — but multiple structures",ok:true}],
+    verified:true, priceSort:9000, amt:"On-site calculator", amtq:true,
+    note:"Price computes on their rates page (first 12 + each added + 9% ME tax + $1,000 deposit). Books 20+ groups early.",
+    src:"mcgeeisland.com", url:"https://mcgeeisland.com/rates/"
+  },
+  {
+    id:"happiness", order:6, kind:"camp", kindLabel:"150-acre camp",
+    name:"Happiness Is Camping", where:"Hardwick, NJ", dist:"~1.25 hr drive — closest", driveHrs:1.25, roof:false,
+    blurb:"The closest option by far: a 150-acre summer camp in northwest NJ, available off-season as a full buyout. Camp vibe, an hour-plus from the city.",
+    amen:"A/C cabins, ponds, streams, pool, sports fields, dining hall. Kitchen on site (confirm self-cater).",
+    cap:"Sleeps 30+ — comfortable over 28.",
+    flags:[{t:"Lodging across separate cabins — one campus, but split",ok:false},{t:"Off-season rental benefiting a kids' cancer charity — confirm dates + alcohol",ok:false}],
+    verified:false, priceSort:9992, amt:"By inquiry", amtq:true,
+    note:"No published price; rental supports the charity. Confirm available weeks and alcohol policy.",
+    src:"happinessiscamping.org", url:"https://www.happinessiscamping.org/rent-our-facility/"
+  },
+  {
+    id:"lohikan", order:7, kind:"camp", kindLabel:"Lakefront summer camp",
+    name:"Camp Lohikan", where:"Lake Como, PA (Poconos)", dist:"~2.5 hr drive", driveHrs:2.5, roof:false,
+    blurb:"A classic Poconos summer camp on its own spring-fed lake — beach, waterslide, the works — rentable as a full buyout. The catch is the calendar.",
+    amen:"Private lake + beach + waterslide, sports, cabins. CATERED — meals are included, not self-cater.",
+    cap:"Sleeps 25+ across cabins.",
+    flags:[{t:"Buyout typically late-Aug to June — no July",ok:false},{t:"Catered, not self-catered",ok:false},{t:"Cabins — split across the camp",ok:false}],
+    verified:false, priceSort:9993, amt:"By inquiry", amtq:true,
+    note:"No published rate. Reported ~$290–320/pp including food is unconfirmed — get a quote with dates.",
+    src:"lohikan.com", url:"https://lohikan.com/groups.php"
+  },
+  {
+    id:"mahkeenac", order:8, kind:"camp", kindLabel:"Berkshires lakefront camp",
+    name:"Camp Mah-Kee-Nac", where:"Lenox, MA (Berkshires)", dist:"~2.5 hr drive", driveHrs:2.5, roof:false,
+    blurb:"A Berkshires camp on Stockbridge Bowl with real lake frontage and a clean 25-person minimum — Tanglewood country, two and a half hours out.",
+    amen:"Lakefront, boating, pool, sports facilities, cabins. Catered (ask about self-cater).",
+    cap:"Sleeps 25 to several hundred — no upper-cap issue.",
+    flags:[{t:"Rental season early-June + mid-Aug to Sept — no July",ok:false},{t:"Cabins — split across the camp",ok:false}],
+    verified:false, priceSort:9994, amt:"By inquiry", amtq:true,
+    note:"Quote needed. Confirm self-cater vs catered and exact summer dates.",
+    src:"campmkn.com", url:"https://www.campmkn.com/camp-rentals/"
+  },
+  {
+    id:"norwich", order:9, kind:"retreat", kindLabel:"Private-lake retreat",
+    name:"The Retreat at Norwich Lake", where:"Huntington, MA", dist:"~3 hr drive", driveHrs:3, roof:false,
+    blurb:"A retreat on a 127-acre private lake in western Mass — self-catering kitchen and quiet water, in the drive-able tier if the group will go 3 hours.",
+    amen:"Commercial kitchen (self-cater), private lake, kayaks, paddleboards, lakefront lodging.",
+    cap:"Sleeps ~25–30 — right around our number; confirm the top end.",
+    flags:[{t:"Likely multiple buildings — confirm layout",ok:false}],
+    verified:false, priceSort:9995, amt:"By inquiry", amtq:true,
+    note:"No published price. Confirm capacity, layout and summer availability.",
+    src:"retreatatnorwichlake.com", url:"https://retreatatnorwichlake.com/"
+  },
+  {
+    id:"clapboard", order:10, kind:"island", kindLabel:"22-acre island estate",
+    name:"Clapboard Island Estate", where:"Casco Bay, Maine", dist:"~5 hr drive (2 hr Boston)", driveHrs:5, roof:false,
+    blurb:"A private 22-acre island estate in Casco Bay with six little swim beaches — a Laurel-style island that's meaningfully closer than midcoast Maine if Boston folks join.",
+    amen:"Gourmet kitchen (self-cater), kayaks/SUP, swim beaches, wifi, main estate house.",
+    cap:"Sleeps ~26 — slightly under 28; confirm.",
+    flags:[{t:"Caps ~26 (just under our 28)",ok:false},{t:"7-night minimum",ok:false}],
+    verified:false, priceSort:9996, amt:"By inquiry", amtq:true,
+    note:"Listed ~$700/night is a low-season floor only — get a summer quote.",
+    src:"dreamexoticrentals.com", url:"https://www.dreamexoticrentals.com/properties/Islands/vacation-Maine-ClapboardIslandEstate.htm"
+  },
+  {
+    id:"tranquille", order:11, kind:"lake", kindLabel:"Mountain-lake cabins",
+    name:"Tranquille Resort", where:"Lake Chatuge, North Georgia", dist:"Fly ATL + ~2 hr drive", driveHrs:99, roof:false,
+    blurb:"Seven cabins on 600 ft of private shoreline on a big North-Georgia mountain lake. Only makes sense if a chunk of the group is flying anyway.",
+    amen:"Full kitchen per cabin (self-cater), private dock, boat rentals, 7,050-acre lake.",
+    cap:"Sleeps 30+ across the cabins.",
+    flags:[{t:"Spread across 7 separate cabins",ok:false},{t:"NYC majority would fly (~$130–280 RT to ATL)",ok:false}],
+    verified:false, priceSort:9997, amt:"By inquiry", amtq:true,
+    note:"Quote needed; add flights. Best only if the group is already split between cities.",
+    src:"tranquilleresort.com", url:"https://www.tranquilleresort.com/cabins-north-georgia"
+  }
+];
+
+const LEADS = [
+  {n:"House Island", w:"Casco Bay, Maine", d:"Historic private island, reportedly sleeps ~31. Sibling to Clapboard; pricing opaque. Need a verified listing + quote."},
+  {n:"Camp Iroquois", w:"Upper Saranac Lake, Adirondacks NY", d:"Another Great Camp, sleeps ~30, reportedly ~$28k/wk. ~5.5 hr. Confirm it rents whole + the rate."},
+  {n:"Laketown Lodge", w:"Bear Lake, Utah", d:"Single lakefront lodge, sleeps ~30, reportedly ~$850–1,510/night summer (≈ $300/pp if mid-range). Fly SLC + ~2.5 hr. Verify."},
+  {n:"Skyland Camp", w:"near Asheville, NC", d:"Whole ~75-acre camp, reportedly ~$3,000/day. Self-cater unconfirmed; cabins (split). Fly Asheville. Verify."},
+  {n:"A drive-able single lodge for 30+", w:"Catskills / Berkshires / Finger Lakes", d:"Genuinely scarce — most single homes in these regions cap ~12–16. I can keep hunting if you want a 4th one-roof option near home."}
+];
+
+let sort="dist", fDrive=false, fRoof=false;
+const grid=document.getElementById("grid");
+const statEl=document.getElementById("storestat");
+
+/* Tiny escapers so the documented "edit a venue" path (see README) can't break
+   rendering or inject markup if a future venue value contains < > & " or a
+   non-http url. V[]/LEADS[] are author-edited, so this is belt-and-suspenders. */
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function safeUrl(u){return /^https?:\/\//i.test(u)?u:"#";}
+function flagsHTML(o){return o.flags.map(f=>`<span class="flag ${f.ok?'ok':''}">${f.ok?'✓':'🚩'} ${esc(f.t)}</span>`).join("");}
+
+function card(o){
+  const foot = FORM_CONFIGURED
+    ? `<a class="pick" href="${voteLink(o.name)}" target="_blank" rel="noopener">Vote for this →</a>
+       <span class="meta">opens the ballot, pre-picked</span>`
+    : `<button class="pick off" disabled aria-disabled="true" title="Voting isn't set up yet — see README.md">Vote for this →</button>
+       <span class="meta">preview</span>`;
+  return `<article class="card" data-id="${esc(o.id)}">
+    <div class="tile k-${esc(o.kind)}"><span>${esc(o.kindLabel)}</span></div>
+    <div class="body">
+      <a class="toplink" href="${safeUrl(o.url)}" target="_blank" rel="noopener">Photos &amp; booking ↗</a>
+      <div class="toprow">
+        <span class="num">${String(o.order).padStart(2,'0')} / ${V.length}</span>
+        <span class="badge ${o.verified?'v':'q'}">${o.verified?'✓ Verified':'◇ By inquiry'}</span>
+      </div>
+      <h3 class="name">${esc(o.name)}</h3>
+      <p class="where">${esc(o.where)}</p>
+      <p class="dist">${esc(o.dist)}</p>
+      <div class="seg"><div class="h">The place</div><p>${esc(o.blurb)}</p></div>
+      <div class="seg amen"><div class="h">Sleeping &amp; amenities</div><p>${esc(o.amen)}</p></div>
+      <div class="seg cap"><div class="h">Headcount</div><p>${esc(o.cap)}</p></div>
+      <div class="flags">${flagsHTML(o)}</div>
+      <div class="price">
+        <span class="amt ${o.amtq?'q':''}">${esc(o.amt)}</span>
+        <div class="note">${esc(o.note)}</div>
+      </div>
+      <div class="cardfoot">${foot}</div>
+    </div>
+  </article>`;
+}
+
+function sorted(){
+  let l=V.slice();
+  if(fDrive) l=l.filter(o=>o.driveHrs<=3);
+  if(fRoof) l=l.filter(o=>o.roof);
+  if(sort==="dist") l.sort((a,b)=>a.driveHrs-b.driveHrs);
+  else if(sort==="price") l.sort((a,b)=>a.priceSort-b.priceSort);
+  else l.sort((a,b)=>a.order-b.order);
+  return l;
+}
+function render(){ grid.innerHTML=sorted().map(card).join(""); }
+function renderLeads(){
+  document.getElementById("leadsHeading").textContent=LEADS.length+" more candidates — promising, but I haven't verified them yet";
+  document.getElementById("leadList").innerHTML=LEADS.map(L=>`<div class="lead"><b>${esc(L.n)}</b> — <span class="det">${esc(L.w)}. ${esc(L.d)}</span></div>`).join("");
+}
+
+function wireForm(){
+  const note=document.getElementById("setupNote");
+  const cta=document.getElementById("voteCta");
+  if(FORM_CONFIGURED){
+    note.hidden=true;
+    cta.href=FORM_RESULTS_URL;
+    cta.classList.remove("off");
+    cta.removeAttribute("aria-disabled");
+    statEl.textContent="Voting is live. Tap a venue's “Vote for this” to open the ballot with that spot pre-picked, then hit Submit. Track the tally any time with “See live results”.";
+  }else{
+    note.hidden=false;
+    cta.removeAttribute("href");
+    cta.classList.add("off");
+    cta.setAttribute("aria-disabled","true");
+    statEl.textContent="Setup needed: paste your Google Form link into the top of this file's script (see README.md). Until then the cards are a preview and the vote buttons are inactive.";
+  }
+}
+
+document.querySelectorAll("[data-sort]").forEach(b=>b.addEventListener("click",()=>{
+  sort=b.getAttribute("data-sort");
+  document.querySelectorAll("[data-sort]").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  render();
+}));
+document.getElementById("fDrive").addEventListener("click",function(){fDrive=!fDrive; this.setAttribute("aria-pressed",fDrive?"true":"false"); render();});
+document.getElementById("fRoof").addEventListener("click",function(){fRoof=!fRoof; this.setAttribute("aria-pressed",fRoof?"true":"false"); render();});
+
+document.getElementById("spotCount").textContent=V.length;
+renderLeads(); render(); wireForm();
+</script>
+</body>
+</html>
